@@ -46,7 +46,7 @@
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
             // IMPORTANTE: Mude "inimigo.glb" para o nome exato do seu arquivo baixado da IA
-            BABYLON.SceneLoader.ImportMesh("", "./", "inimigo.glb", scene, function (meshes) {
+            BABYLON.SceneLoader.ImportMesh("", "./", "chaulin".glb", scene, function (meshes) {
                 monstro = meshes[0];
                 monstro.position = new BABYLON.Vector3(0, 0, 0);
                 monstro.scaling = new BABYLON.Vector3(1, 1, 1); // Ajuste o tamanho se precisar
