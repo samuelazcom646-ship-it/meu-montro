@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Inimigo Babylon.js no FrameVR</title>
+    <style>
+        html, body { overflow: hidden; width: 100%; height: 100%; margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+        #renderCanvas { width: 100%; height: 100%; touch-action: none; outline: none; }
+        
+        /* Interface de Vida do Jogador */
+        #ui-container { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: white; pointer-events: none; }
+        .barra-vida { width: 200px; height: 20px; background: #555; border-radius: 10px; overflow: hidden; margin-top: 5px; }
+        #vida-atual { width: 100%; height: 100%; background: #ff3333; transition: width 0.2s; }
+        
+        /* Efeito de Sangue ao Tomar Dano */
+        #dano-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 0, 0, 0.4); opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+    </style>
+    <script src="https://babylonjs.com"></script>
+    <script src="https://babylonjs.com"></script>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    
+    <div id="ui-container">
+        <div>Sua Vida</div>
+        <div class="barra-vida"><div id="vida-atual"></div></div>
+    </div>
+    <div id="dano-flash"></div>
+
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+
+        let vidaJogador = 100;
+        let monstro;
+        let podeTomar Dano = true;
+
+        const createScene = function () {
+            const scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color4(0, 0, 0, 0); // Fundo transparente
+
+            // Câmera (representa o Jogador no FrameVR)
+            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 8, BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+            
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            // IMPORTANTE: Mude "inimigo.glb" para o nome exato do seu arquivo baixado da IA
+            BABYLON.SceneLoader.ImportMesh("", "./", "inimigo.glb", scene, function (meshes) {
+                monstro = meshes[0];
+                monstro.position = new BABYLON.Vector3(0, 0, 0);
+                monstro.scaling = new BABYLON.Vector3(1, 1, 1); // Ajuste o tamanho se precisar
+            });
+
+            // Loop do Jogo: Executado a cada frame
+            scene.onBeforeRenderObservable.add(() => {
+                if (!monstro) return;
+
+                // Calcula a distância entre o monstro e você
+                let distancia = BABYLON.Vector3.Distance(monstro.position, camera.position);
+
+                // Se você chegar a menos de 15 metros, ele te persegue
+                if (distancia < 15 && distancia > 2) {
+                    let direcao = camera.position.subtract(monstro.position).normalize();
+                    
+                    // Faz o monstro olhar para você enquanto anda
+                    monstro.lookAt(new BABYLON.Vector3(camera.position.x, monstro.position.y, camera.position.z));
+                    
+                    // Move o monstro na sua direção (velocidade: 0.03)
+                    monstro.position.addInPlace(direcao.scale(0.03));
+                }
+
+                // Se ele encostar em você (menos de 2 metros), causa dano
+                if (distancia <= 2 && podeTomarDano && vidaJogador > 0) {
+                    executarDano();
+                }
+            });
+
+            return scene;
+        };
+
+        function executarDano() {
+            podeTomarDano = false;
+            vidaJogador -= 20; // Tira 20 de vida
+            
+            // Atualiza a barra visual
+            document.getElementById("vida-atual").style.width = vidaJogador + "%";
+            
+            // Pisca a tela em vermelho
+            const flash = document.getElementById("dano-flash");
+            flash.style.opacity = "1";
+            setTimeout(() => { flash.style.opacity = "0"; }, 150);
+
+            if (vidaJogador <= 0) {
+                alert("Você Morreu!");
+                vidaJogador = 100; // Renasce
+                document.getElementById("vida-atual").style.width = "100%";
+            }
+
+            // Tempo de invulnerabilidade (1 segundo) para não morrer instantaneamente
+            setTimeout(() => { podeTomarDano = true; }, 1000);
+        }
+
+        const scene = createScene();
+        engine.runRenderLoop(function () { scene.render(); });
+        window.addEventListener("resize", function () { engine.resize(); });
+    </script>
+</body>
+</html>
